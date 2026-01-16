@@ -1,0 +1,22 @@
+# flyctl launch added from .gitignore
+# Spec folder
+**/spec
+
+# Build
+**/vibes-api
+**/*.exe
+
+# Environment
+**/.env
+**/.env.local
+
+# IDE
+**/.idea
+**/.vscode
+
+# OS
+**/.DS_Store
+
+# Go
+**/*.out
+fly.toml

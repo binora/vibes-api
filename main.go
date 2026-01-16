@@ -73,7 +73,7 @@ func main() {
 		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 		<-sigChan
 		log.Println("Shutting down...")
-		server.Shutdown(ctx)
+		_ = server.Shutdown(ctx)
 	}()
 
 	log.Printf("Server starting on port %s", port)
@@ -100,7 +100,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 // GET /health
 func handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
 // HeartbeatRequest is the request body for POST /heartbeat
@@ -135,13 +135,13 @@ func handleHeartbeat(w http.ResponseWriter, r *http.Request) {
 	pipe := rdb.Pipeline()
 	pipe.PFAdd(ctx, key, req.ClientID)
 	pipe.Expire(ctx, key, 5*time.Minute)
-	pipe.Exec(ctx)
+	_, _ = pipe.Exec(ctx)
 
 	// Count active users (last 5 minutes)
 	count := countActiveUsers(agent)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(HeartbeatResponse{Count: count})
+	_ = json.NewEncoder(w).Encode(HeartbeatResponse{Count: count})
 }
 
 // VibesRequest is the request body for POST /vibes
@@ -203,7 +203,7 @@ func handleVibes(w http.ResponseWriter, r *http.Request) {
 				pipe := rdb.Pipeline()
 				pipe.Incr(ctx, rateLimitKey)
 				pipe.Expire(ctx, rateLimitKey, time.Hour)
-				pipe.Exec(ctx)
+				_, _ = pipe.Exec(ctx)
 
 				// Store drop
 				ts := time.Now().UnixMilli()
@@ -248,7 +248,7 @@ func handleVibes(w http.ResponseWriter, r *http.Request) {
 	count := countActiveUsers(agent)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(VibesResponse{
+	_ = json.NewEncoder(w).Encode(VibesResponse{
 		Drops: drops,
 		Count: count,
 		OK:    posted,
@@ -270,7 +270,7 @@ func handlePulse(w http.ResponseWriter, r *http.Request) {
 	count := countActiveUsers(agent)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(PulseResponse{Count: count})
+	_ = json.NewEncoder(w).Encode(PulseResponse{Count: count})
 }
 
 // countActiveUsers returns the approximate count of active users in the last 5 minutes
