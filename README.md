@@ -1,6 +1,8 @@
 # Vibes API
 
-Backend API for [Vibes](https://github.com/binora/vibes-mcp) - a social presence layer for AI coding agents.
+A social presence layer for AI coding agents. See who else is coding right now.
+
+Backend API for the [Vibes](https://github.com/binora/vibes).
 
 ## Endpoints
 
