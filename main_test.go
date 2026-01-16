@@ -58,6 +58,18 @@ func TestSanitizeAgent(t *testing.T) {
 	}
 }
 
+func TestWeeklyStatsKey(t *testing.T) {
+	key := weeklyStatsKey()
+
+	// Verify the format is correct
+	if key == "" {
+		t.Error("weeklyStatsKey() returned empty string")
+	}
+	if !bytes.HasPrefix([]byte(key), []byte("vibes:stats:week:")) {
+		t.Errorf("weeklyStatsKey() = %q, want prefix 'vibes:stats:week:'", key)
+	}
+}
+
 func TestFormatTimeAgo(t *testing.T) {
 	now := time.Now()
 
@@ -309,6 +321,60 @@ func TestHandleVibes(t *testing.T) {
 
 		if w.Code != http.StatusBadRequest {
 			t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+		}
+	})
+
+	t.Run("weekly counter increments on post", func(t *testing.T) {
+		mr.FlushAll()
+
+		// First request - get baseline
+		body := `{"client_id": "weekly-test", "agent": "claude-code"}`
+		req := httptest.NewRequest(http.MethodPost, "/vibes", bytes.NewBufferString(body))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		handleVibes(w, req)
+
+		var resp1 VibesResponse
+		_ = json.NewDecoder(w.Body).Decode(&resp1)
+		initialCount := resp1.WeeklyDrops
+
+		// Post a message
+		body = `{"client_id": "weekly-test", "agent": "claude-code", "message": "test drop"}`
+		req = httptest.NewRequest(http.MethodPost, "/vibes", bytes.NewBufferString(body))
+		req.Header.Set("Content-Type", "application/json")
+		w = httptest.NewRecorder()
+		handleVibes(w, req)
+
+		var resp2 VibesResponse
+		_ = json.NewDecoder(w.Body).Decode(&resp2)
+
+		if resp2.WeeklyDrops != initialCount+1 {
+			t.Errorf("weekly count = %d, want %d", resp2.WeeklyDrops, initialCount+1)
+		}
+	})
+
+	t.Run("weekly counter is global across agents", func(t *testing.T) {
+		mr.FlushAll()
+
+		// Post from claude-code
+		body := `{"client_id": "agent1", "agent": "claude-code", "message": "from claude"}`
+		req := httptest.NewRequest(http.MethodPost, "/vibes", bytes.NewBufferString(body))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		handleVibes(w, req)
+
+		// Post from cursor
+		body = `{"client_id": "agent2", "agent": "cursor", "message": "from cursor"}`
+		req = httptest.NewRequest(http.MethodPost, "/vibes", bytes.NewBufferString(body))
+		req.Header.Set("Content-Type", "application/json")
+		w = httptest.NewRecorder()
+		handleVibes(w, req)
+
+		var resp VibesResponse
+		_ = json.NewDecoder(w.Body).Decode(&resp)
+
+		if resp.WeeklyDrops != 2 {
+			t.Errorf("weekly count = %d, want 2 (global across agents)", resp.WeeklyDrops)
 		}
 	})
 }

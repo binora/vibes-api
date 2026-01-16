@@ -160,9 +160,10 @@ type Drop struct {
 
 // VibesResponse is the response for POST /vibes
 type VibesResponse struct {
-	Drops []Drop `json:"drops"`
-	Count int64  `json:"n"`
-	OK    bool   `json:"ok"`
+	Drops       []Drop `json:"drops"`
+	Count       int64  `json:"n"`
+	OK          bool   `json:"ok"`
+	WeeklyDrops int64  `json:"w"`
 }
 
 // POST /vibes
@@ -217,6 +218,13 @@ func handleVibes(w http.ResponseWriter, r *http.Request) {
 					Member: string(dropJSON),
 				})
 
+				// Increment global weekly counter
+				statsKey := weeklyStatsKey()
+				pipe = rdb.Pipeline()
+				pipe.Incr(ctx, statsKey)
+				pipe.Expire(ctx, statsKey, 14*24*time.Hour) // 2 week TTL
+				_, _ = pipe.Exec(ctx)
+
 				posted = true
 			}
 		}
@@ -247,11 +255,15 @@ func handleVibes(w http.ResponseWriter, r *http.Request) {
 	// Get active count
 	count := countActiveUsers(agent)
 
+	// Get weekly drops count (global, cross-agent)
+	weeklyDrops, _ := rdb.Get(ctx, weeklyStatsKey()).Int64()
+
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(VibesResponse{
-		Drops: drops,
-		Count: count,
-		OK:    posted,
+		Drops:       drops,
+		Count:       count,
+		OK:          posted,
+		WeeklyDrops: weeklyDrops,
 	})
 }
 
@@ -293,6 +305,12 @@ func sanitizeAgent(agent string) string {
 		}
 	}
 	return "other"
+}
+
+// weeklyStatsKey returns the Redis key for weekly drop counter
+func weeklyStatsKey() string {
+	year, week := time.Now().ISOWeek()
+	return fmt.Sprintf("vibes:stats:week:%d:%d", year, week)
 }
 
 // formatTimeAgo formats a timestamp as relative time
