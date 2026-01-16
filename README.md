@@ -11,7 +11,7 @@ Backend API for the [Vibes](https://github.com/binora/vibes).
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/health` | Health check |
-| `POST` | `/heartbeat` | Register presence (called every 30s by clients) |
+| `POST` | `/heartbeat` | Register presence (called every 60s by clients) |
 | `POST` | `/vibes` | Post a vibe and/or get recent vibes |
 | `GET` | `/pulse?a={agent}` | Get count of active users for an agent |
 
