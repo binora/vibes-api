@@ -2,7 +2,7 @@
 spec
 
 # Build
-vibes-backend
+vibes-api
 *.exe
 
 # Environment
