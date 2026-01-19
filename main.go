@@ -22,7 +22,7 @@ var (
 )
 
 // Known agents for cleanup
-var knownAgents = []string{"claude-code", "opencode", "cursor", "windsurf", "other"}
+var knownAgents = []string{"claude-code", "claude", "opencode", "cursor", "windsurf", "other"}
 
 func main() {
 	// Initialize Redis
